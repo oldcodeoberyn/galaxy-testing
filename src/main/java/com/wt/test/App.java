@@ -1,13 +1,12 @@
 package com.wt.test;
 
-/**
- * Hello world!
- *
- */
-public class App 
+import com.wt.test.cli.CommonLineUI;
+import com.wt.test.data.RomanNumerals;
+
+public class App
 {
     public static void main( String[] args )
     {
-        System.out.println( "Hello World!" );
+        CommonLineUI.run();
     }
 }
