@@ -25,8 +25,9 @@ import com.wt.test.data.RomanNumerals;
 public class SemanticParseEngine
 {
     public static final String IS_SEPERATOR = " is ";
+    public static final String INVALID_ROMAN_SYMBOL = "Z";
     public HashMap<String, Character> intergalacticToRomanNumeralMap;
-    public HashMap<String, Integer> materialValueMap;
+    public HashMap<String, Float> materialValueMap;
 
     public SemanticParseEngine()
     {
@@ -34,8 +35,9 @@ public class SemanticParseEngine
         materialValueMap = Maps.newHashMap();
     }
 
-    public ParseResult parse( String strToBeParsed )
+    public ParseResult parse( String input )
     {
+        String strToBeParsed = adjustFormat( input );
         if( !strToBeParsed.toLowerCase().contains( IS_SEPERATOR ) )
         {
             return ParseResult.failure();
@@ -43,11 +45,11 @@ public class SemanticParseEngine
 
         if( strToBeParsed.toLowerCase().contains( "how much" ) )
         {
-            return parseCalculationFormula( strToBeParsed );
+            return parseValueCalculationFormula( strToBeParsed );
         }
         else if( strToBeParsed.toLowerCase().contains( "how many credits" ) )
         {
-            return ParseResult.failure();
+            return parseCreditsCalculationFormula( strToBeParsed );
         }
         else if( strToBeParsed.toLowerCase().contains( "credits" ) )
         {
@@ -59,6 +61,37 @@ public class SemanticParseEngine
         }
     }
 
+    private ParseResult parseCreditsCalculationFormula( String calculationRequest )
+    {
+        String[] requestPartials = calculationRequest.split( IS_SEPERATOR );
+
+        if( requestPartials.length != 2 )
+        {
+            return ParseResult.failure();
+        }
+
+        String formulaInfo = requestPartials[1];
+        String[] formulaInfoArr = formulaInfo.split( " " );
+        String materialName = formulaInfoArr[formulaInfoArr.length - 1];
+        Float materialCredit = materialValueMap.get( materialName );
+        if( materialCredit == null )
+        {
+            return ParseResult.failure();
+        }
+        formulaInfoArr[formulaInfoArr.length - 1] = "";
+        String formula = Joiner.on( " " ).join( formulaInfoArr ).trim();
+        String romanNumeral = formulaToRomanNumerals( formula );
+        Integer numberOfMaterial = RomanNumeralToArabicNumeralConverter.convert( romanNumeral );
+        if( numberOfMaterial == null )
+        {
+            return ParseResult.failure();
+        }
+
+        float creditsValue = numberOfMaterial * materialCredit;
+
+        return new ParseResult( true, formulaInfo + IS_SEPERATOR + creditsValue + " Credits" );
+    }
+
     private ParseResult parseMaterialCredits( String strToBeParsed )
     {
         String[] requestPartials = strToBeParsed.split( IS_SEPERATOR );
@@ -67,8 +100,29 @@ public class SemanticParseEngine
             return ParseResult.failure();
         }
 
-        String materialInfo = adjustFormat( requestPartials[0] );
-        String creditsInfo = adjustFormat( requestPartials[1] );
+        String materialInfo = requestPartials[0];
+        String creditsInfo = requestPartials[1];
+
+        String[] materialInfoArr = materialInfo.split( " " );
+        String materialName = materialInfoArr[materialInfoArr.length - 1];
+        materialInfoArr[materialInfoArr.length - 1] = "";
+        String formula = Joiner.on( " " ).join( materialInfoArr ).trim();
+        String romanNumeral = formulaToRomanNumerals( formula );
+        Integer numberOfMaterial = RomanNumeralToArabicNumeralConverter.convert( romanNumeral );
+        if( numberOfMaterial == null )
+        {
+            return ParseResult.failure();
+        }
+
+        String[] creditsInfoArr = creditsInfo.split( " " );
+        if( creditsInfoArr.length != 2 || !CharMatcher.DIGIT.matchesAllOf( creditsInfoArr[0] ) ||
+                        !creditsInfoArr[1].toLowerCase().equals( "credits" ) )
+        {
+            return ParseResult.failure();
+        }
+
+        float materialValue = Float.valueOf( creditsInfoArr[0] ) / numberOfMaterial;
+        materialValueMap.put( materialName, materialValue );
 
         return ParseResult.success();
     }
@@ -78,12 +132,12 @@ public class SemanticParseEngine
         return ImmutableMap.copyOf( intergalacticToRomanNumeralMap );
     }
 
-    public ImmutableMap<String, Integer> getMaterialValueMap()
+    public ImmutableMap<String, Float> getMaterialValueMap()
     {
         return ImmutableMap.copyOf( materialValueMap );
     }
 
-    private ParseResult parseCalculationFormula( String calculationRequest )
+    private ParseResult parseValueCalculationFormula( String calculationRequest )
     {
         String[] requestPartials = calculationRequest.split( IS_SEPERATOR );
 
@@ -92,7 +146,7 @@ public class SemanticParseEngine
             return ParseResult.failure();
         }
 
-        String formula = adjustFormat( requestPartials[1] );
+        String formula = requestPartials[1];
 
         String romanNumeral = formulaToRomanNumerals( formula );
 
@@ -103,14 +157,13 @@ public class SemanticParseEngine
             return ParseResult.failure();
         }
 
-        StringBuilder builder = new StringBuilder();
         return new ParseResult(
-            true, builder.append( formula ).append( IS_SEPERATOR ).append( value.toString() ).toString() );
+            true, formula + IS_SEPERATOR + value.toString() );
     }
 
     private String adjustFormat( String input )
     {
-        return CharMatcher.JAVA_LETTER.or( CharMatcher.WHITESPACE ).retainFrom( input ).trim();
+        return CharMatcher.JAVA_LETTER_OR_DIGIT.or( CharMatcher.WHITESPACE ).retainFrom( input ).trim();
     }
 
     private String formulaToRomanNumerals( String formula )
@@ -122,7 +175,8 @@ public class SemanticParseEngine
             public String apply( String input )
             {
                 Character result = intergalacticToRomanNumeralMap.get( input );
-                return result == null ? "" : result.toString();
+                // When get the unrecognize intergalactic symbol, ouput an invalid roman symbol
+                return result == null ? INVALID_ROMAN_SYMBOL : result.toString();
             }
         } );
         return Joiner.on( "" ).join( romanSymbolList );

@@ -4,6 +4,8 @@
 
 package com.wt.test.cli;
 
+import com.google.common.base.CharMatcher;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -27,7 +29,7 @@ public class CommonLineUI
             try
             {
                 String line = KEYBOARD_READER.readLine();
-                if(line == null)
+                if(line.isEmpty())
                 {
                     continue;
                 }
