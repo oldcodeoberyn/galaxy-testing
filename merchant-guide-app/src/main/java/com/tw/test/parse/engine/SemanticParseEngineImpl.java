@@ -6,6 +6,7 @@ package com.tw.test.parse.engine;
 
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.Optional;
 
 import com.google.common.base.CharMatcher;
 import com.google.common.base.Function;
@@ -23,39 +24,54 @@ import com.tw.test.romannumerals.validator.RomanNumeralValidator;
  * @author Lex Li
  * @date 19/10/2016
  */
-public class SemanticParseEngineImpl implements SemanticParseEngine
+public class SemanticParseEngineImpl
+    implements SemanticParseEngine
 {
     public static final String IS_SEPERATOR = " is ";
     public static final String INVALID_ROMAN_SYMBOL = "Z";
+    public static final String WHITESPACE_STRING = " ";
     private final NumeralTranslator numeralTranslator;
     private final HashMap<String, Character> intergalacticToRomanNumeralMap;
     private final HashMap<String, Float> materialValueMap;
 
-    public SemanticParseEngineImpl( NumeralTranslator numeralTranslator  )
+    public SemanticParseEngineImpl( NumeralTranslator numeralTranslator )
     {
         intergalacticToRomanNumeralMap = Maps.newHashMap();
         materialValueMap = Maps.newHashMap();
         this.numeralTranslator = numeralTranslator;
     }
 
+    public ImmutableMap<String, Character> getIntergalacticToRomanNumeralMap()
+    {
+        return ImmutableMap.copyOf( intergalacticToRomanNumeralMap );
+    }
+
+    public ImmutableMap<String, Float> getMaterialValueMap()
+    {
+        return ImmutableMap.copyOf( materialValueMap );
+    }
+
     @Override
     public ParseResult parse( String input )
     {
         String strToBeParsed = adjustFormat( input );
-        if( !strToBeParsed.toLowerCase().contains( IS_SEPERATOR ) )
+
+        if( !isGrammaOkForParse(strToBeParsed) )
         {
             return ParseResult.failure();
         }
 
-        if( strToBeParsed.toLowerCase().contains( "how much" ) )
+        String lowerCaseInput = strToBeParsed.toLowerCase();
+
+        if( lowerCaseInput.contains( "how much" ) )
         {
             return parseValueCalculationFormula( strToBeParsed );
         }
-        else if( strToBeParsed.toLowerCase().contains( "how many credits" ) )
+        else if( lowerCaseInput.contains( "how many credits" ) )
         {
             return parseCreditsCalculationFormula( strToBeParsed );
         }
-        else if( strToBeParsed.toLowerCase().contains( "credits" ) )
+        else if( lowerCaseInput.contains( "credits" ) )
         {
             return parseMaterialCredits( strToBeParsed );
         }
@@ -69,13 +85,8 @@ public class SemanticParseEngineImpl implements SemanticParseEngine
     {
         String[] requestPartials = calculationRequest.split( IS_SEPERATOR );
 
-        if( requestPartials.length != 2 )
-        {
-            return ParseResult.failure();
-        }
-
         String formulaInfo = requestPartials[1];
-        String[] formulaInfoArr = formulaInfo.split( " " );
+        String[] formulaInfoArr = formulaInfo.split( WHITESPACE_STRING );
         String materialName = formulaInfoArr[formulaInfoArr.length - 1];
         Float materialCredit = materialValueMap.get( materialName );
         if( materialCredit == null )
@@ -84,14 +95,14 @@ public class SemanticParseEngineImpl implements SemanticParseEngine
         }
         formulaInfoArr[formulaInfoArr.length - 1] = "";
         String formula = Joiner.on( " " ).join( formulaInfoArr ).trim();
-        String romanNumeral = formulaToRomanNumerals( formula );
-        Integer numberOfMaterial = numeralTranslator.translate( romanNumeral );
-        if( numberOfMaterial == null )
+        String romanNumeral = intergalacticFormulaToRomanNumerals( formula );
+        Optional<Integer> numberOfMaterial = numeralTranslator.translate( romanNumeral );
+        if( !numberOfMaterial.isPresent() )
         {
             return ParseResult.failure();
         }
 
-        float creditsValue = numberOfMaterial * materialCredit;
+        float creditsValue = numberOfMaterial.get() * materialCredit;
 
         return new ParseResult( true, formulaInfo + IS_SEPERATOR + creditsValue + " Credits" );
     }
@@ -99,114 +110,96 @@ public class SemanticParseEngineImpl implements SemanticParseEngine
     private ParseResult parseMaterialCredits( String strToBeParsed )
     {
         String[] requestPartials = strToBeParsed.split( IS_SEPERATOR );
-        if( requestPartials.length != 2 )
-        {
-            return ParseResult.failure();
-        }
 
         String materialInfo = requestPartials[0];
         String creditsInfo = requestPartials[1];
 
-        String[] materialInfoArr = materialInfo.split( " " );
+        String[] materialInfoArr = materialInfo.split( WHITESPACE_STRING );
         String materialName = materialInfoArr[materialInfoArr.length - 1];
         materialInfoArr[materialInfoArr.length - 1] = "";
         String formula = Joiner.on( " " ).join( materialInfoArr ).trim();
-        String romanNumeral = formulaToRomanNumerals( formula );
-        Integer numberOfMaterial = numeralTranslator.translate( romanNumeral );
-        if( numberOfMaterial == null )
+        String romanNumeral = intergalacticFormulaToRomanNumerals( formula );
+        Optional<Integer> numberOfMaterial = numeralTranslator.translate( romanNumeral );
+        if( !numberOfMaterial.isPresent() )
         {
             return ParseResult.failure();
         }
 
-        String[] creditsInfoArr = creditsInfo.split( " " );
+        String[] creditsInfoArr = creditsInfo.split( WHITESPACE_STRING );
         if( creditsInfoArr.length != 2 || !CharMatcher.DIGIT.matchesAllOf( creditsInfoArr[0] ) ||
             !creditsInfoArr[1].toLowerCase().equals( "credits" ) )
         {
             return ParseResult.failure();
         }
 
-        float materialValue = Float.valueOf( creditsInfoArr[0] ) / numberOfMaterial;
+        float materialValue = Float.valueOf( creditsInfoArr[0] ) / numberOfMaterial.get();
         materialValueMap.put( materialName, materialValue );
 
         return ParseResult.success();
-    }
-
-    public ImmutableMap<String, Character> getIntergalacticToRomanNumeralMap()
-    {
-        return ImmutableMap.copyOf( intergalacticToRomanNumeralMap );
-    }
-
-    public ImmutableMap<String, Float> getMaterialValueMap()
-    {
-        return ImmutableMap.copyOf( materialValueMap );
     }
 
     private ParseResult parseValueCalculationFormula( String calculationRequest )
     {
         String[] requestPartials = calculationRequest.split( IS_SEPERATOR );
 
-        if( requestPartials.length != 2 )
-        {
-            return ParseResult.failure();
-        }
-
         String formula = requestPartials[1];
 
-        String romanNumeral = formulaToRomanNumerals( formula );
+        String romanNumeral = intergalacticFormulaToRomanNumerals( formula );
 
-        Integer value = numeralTranslator.translate( romanNumeral );
+        Optional value = numeralTranslator.translate( romanNumeral );
 
-        if( value == null )
+        if( !value.isPresent() )
         {
             return ParseResult.failure();
         }
 
         return new ParseResult(
-            true, formula + IS_SEPERATOR + value.toString() );
-    }
-
-    private String adjustFormat( String input )
-    {
-        return CharMatcher.JAVA_LETTER_OR_DIGIT.or( CharMatcher.WHITESPACE ).retainFrom( input ).trim();
-    }
-
-    private String formulaToRomanNumerals( String formula )
-    {
-        final Iterable<String> symbols = Splitter.on( " " ).trimResults().split( formula );
-        Collection<String> symbolList = Lists.newArrayList( symbols );
-        Collection<String> romanSymbolList = Collections2.transform( symbolList, new Function<String, String>()
-        {
-            public String apply( String input )
-            {
-                Character result = intergalacticToRomanNumeralMap.get( input );
-                // When get the unrecognize intergalactic symbol, ouput an invalid roman symbol
-                return result == null ? INVALID_ROMAN_SYMBOL : result.toString();
-            }
-        } );
-        return Joiner.on( "" ).join( romanSymbolList );
+            true, formula + IS_SEPERATOR + value.get().toString() );
     }
 
     private ParseResult parseIntergalacticToRomanMap( String map )
     {
         String[] remapInput = map.split( IS_SEPERATOR );
 
-        if( remapInput.length != 2 )
-        {
-            return ParseResult.failure();
-        }
-
-        String mappedRomanNumeral = remapInput[1].trim();
-        if( mappedRomanNumeral.length() != 1 ||
-            !RomanNumeralValidator.checkInvalidRomanNumeralChar( mappedRomanNumeral ) )
+        String mappedRomanSymbol = remapInput[1].trim();
+        if( mappedRomanSymbol.length() != 1 ||
+            !RomanNumeralValidator.checkInvalidRomanNumeralChar( mappedRomanSymbol ) )
         {
             return ParseResult.failure();
         }
 
         String intergalacticSymbol = remapInput[0].trim();
 
-        intergalacticToRomanNumeralMap.put( intergalacticSymbol, mappedRomanNumeral.charAt( 0 ) );
+        intergalacticToRomanNumeralMap.put( intergalacticSymbol, mappedRomanSymbol.charAt( 0 ) );
 
         return ParseResult.success();
+    }
+
+    private String adjustFormat( String input )
+    {
+        String withoutOtherSymbol = CharMatcher.JAVA_LETTER_OR_DIGIT.or( CharMatcher.WHITESPACE ).retainFrom( input );
+        return CharMatcher.WHITESPACE.trimAndCollapseFrom( withoutOtherSymbol, ' ' );
+    }
+
+    private String intergalacticFormulaToRomanNumerals( String formula )
+    {
+        final Iterable<String> symbols = Splitter.on( WHITESPACE_STRING ).trimResults().split( formula );
+        Collection<String> symbolList = Lists.newArrayList( symbols );
+        Collection<String> romanSymbolList = Collections2.transform( symbolList, new Function<String, String>()
+        {
+            public String apply( String input )
+            {
+                Character result = intergalacticToRomanNumeralMap.get( input );
+                // When get the unrecognized intergalactic symbol, output an invalid roman symbol
+                return result == null ? INVALID_ROMAN_SYMBOL : result.toString();
+            }
+        } );
+        return Joiner.on( "" ).join( romanSymbolList );
+    }
+
+    private boolean isGrammaOkForParse( String toBeCheck )
+    {
+        return toBeCheck.toLowerCase().contains( IS_SEPERATOR ) && toBeCheck.split( IS_SEPERATOR ).length == 2;
     }
 
 }

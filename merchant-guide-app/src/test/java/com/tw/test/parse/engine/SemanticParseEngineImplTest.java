@@ -24,6 +24,7 @@ public class SemanticParseEngineImplTest
     public void testParse_given_illegal_input_expect_return_false() throws Exception
     {
         assertEquals( false, testObj.parse( "tex is B" ).isSuccess() );
+        assertEquals( false, testObj.parse( "tex is is V" ).isSuccess() );
         assertEquals( false, testObj.parse( "I am making a joke" ).isSuccess() );
     }
 
@@ -54,15 +55,15 @@ public class SemanticParseEngineImplTest
 
     public void testParseMaterialCredits_given_credits_information_expect_store_to_materialValueMap() throws Exception
     {
-        testObj.parse( "glob is I" );
-        testObj.parse( "prok is V" );
+        testObj.parse( "glob is  I" );
+        testObj.parse( "prok is  V" );
         testObj.parse( "pish is X" );
         testObj.parse( "tegj is L" );
-        assertEquals( true, testObj.parse( "glob glob Silver is 34 Credits" ).isSuccess() );
+        assertEquals( true, testObj.parse( "glob   glob Silver is 34 Credits" ).isSuccess() );
         assertEquals( true, testObj.getMaterialValueMap().get( "Silver" ).equals( 17.0f ) );
-        assertEquals( true, testObj.parse( "glob prok Gold is 57800 Credits" ).isSuccess() );
+        assertEquals( true, testObj.parse( "glob  prok Gold is 57800 Credits" ).isSuccess() );
         assertEquals( true, testObj.getMaterialValueMap().get( "Gold" ).equals( 14450.0f ) );
-        assertEquals( true, testObj.parse( "pish pish Iron is 03910 Credits" ).isSuccess() );
+        assertEquals( true, testObj.parse( "pish pish   Iron is 03910 Credits" ).isSuccess() );
         assertEquals( true, testObj.getMaterialValueMap().get( "Iron" ).equals( 195.5f ) );
         assertEquals( false, testObj.parse( "glob glob Silver Gold is 34 Credits" ).isSuccess() );
         assertEquals( false, testObj.parse( "glob glob Silver is 34 31 Credits" ).isSuccess() );

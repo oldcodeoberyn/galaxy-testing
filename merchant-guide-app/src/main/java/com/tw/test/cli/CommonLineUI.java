@@ -39,7 +39,10 @@ public class CommonLineUI
                     continue;
                 }
                 ParseResult result = semanticParseEngine.parse( line );
-                System.out.println( result.getResult() );
+                if( !result.getResult().isEmpty() )
+                {
+                    System.out.println( result.getResult() );
+                }
 
             }
             catch( IOException e )

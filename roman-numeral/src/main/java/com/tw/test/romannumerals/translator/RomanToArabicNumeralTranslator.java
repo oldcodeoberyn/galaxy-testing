@@ -7,6 +7,8 @@ package com.tw.test.romannumerals.translator;
 import com.tw.test.romannumerals.dictionary.RomanNumerals;
 import com.tw.test.romannumerals.validator.RomanNumeralValidator;
 
+import java.util.Optional;
+
 /**
  * @author Lex Li
  * @date 18/10/2016
@@ -23,7 +25,7 @@ public class RomanToArabicNumeralTranslator
     }
 
     @Override
-    public Integer translate( String input )
+    public Optional<Integer> translate( String input )
     {
         String romanNumeral = input.trim();
         int length = romanNumeral.length();
@@ -31,7 +33,7 @@ public class RomanToArabicNumeralTranslator
 
         if( !validateRomanNumeral( romanNumeral ) || romanNumeral.isEmpty() )
         {
-            return null;
+            return Optional.empty();
         }
 
         char[] arr = romanNumeral.toCharArray();
@@ -39,7 +41,7 @@ public class RomanToArabicNumeralTranslator
         if( length == 1 )
         {
             sum = sum + RomanNumerals.getValue( arr[0] );
-            return sum;
+            return Optional.of( sum );
         }
 
         for( int i = 0; i < length - 1; i++ )
@@ -50,7 +52,7 @@ public class RomanToArabicNumeralTranslator
                 i++;
                 if( i == length - 1 )
                 {
-                    return sum;
+                    return Optional.of( sum );
                 }
             }
             else
@@ -61,7 +63,7 @@ public class RomanToArabicNumeralTranslator
 
         sum = sum + RomanNumerals.getValue( arr[length - 1] );
 
-        return sum;
+        return Optional.of( sum );
     }
 
 }

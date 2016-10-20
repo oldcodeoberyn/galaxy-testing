@@ -4,11 +4,13 @@
 
 package com.tw.test.romannumerals.translator;
 
+import java.util.Optional;
+
 /**
  * @author Lex Li
  * @date 20/10/2016
  */
 public interface NumeralTranslator
 {
-    Integer translate( String input );
+    Optional<Integer> translate( String input );
 }
