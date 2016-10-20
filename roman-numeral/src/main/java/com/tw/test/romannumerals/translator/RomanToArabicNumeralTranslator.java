@@ -2,25 +2,28 @@
  * Copyright (c) 2016 Nokia Solutions and Networks. All rights reserved.
  */
 
-package com.wt.test.algorithm;
+package com.tw.test.romannumerals.translator;
 
-import com.wt.test.data.RomanNumerals;
+import com.tw.test.romannumerals.dictionary.RomanNumerals;
+import com.tw.test.romannumerals.validator.RomanNumeralValidator;
 
 /**
  * @author Lex Li
  * @date 18/10/2016
  */
-public class RomanNumeralToArabicNumeralConverter
+public class RomanToArabicNumeralTranslator
+    implements NumeralTranslator
 {
 
-    public static boolean validateRomanNumeral( String romanNumeral )
+    public boolean validateRomanNumeral( String romanNumeral )
     {
-        return RomanNumerals.checkInvalidRomanNumeralChar( romanNumeral ) &&
-            RomanNumerals.checkInvalidRomanNumeralCombination( romanNumeral ) &&
-            RomanNumerals.checkOnlyOneSubtractedNumeral( romanNumeral );
+        return RomanNumeralValidator.checkInvalidRomanNumeralChar( romanNumeral ) &&
+            RomanNumeralValidator.checkInvalidRomanNumeralCombination( romanNumeral ) &&
+            RomanNumeralValidator.checkOnlyOneSubtractedNumeral( romanNumeral );
     }
 
-    public static Integer convert( String input )
+    @Override
+    public Integer translate( String input )
     {
         String romanNumeral = input.trim();
         int length = romanNumeral.length();

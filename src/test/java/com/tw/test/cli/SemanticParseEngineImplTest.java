@@ -1,21 +1,23 @@
-package com.wt.test.cli;
+package com.tw.test.cli;
 
+import com.tw.test.parse.engine.SemanticParseEngineImpl;
+import com.tw.test.romannumerals.translator.RomanToArabicNumeralTranslator;
 import junit.framework.TestCase;
 
 /**
  * @author Lex Li
  * @date 19/10/2016
  */
-public class SemanticParseEngineTest
+public class SemanticParseEngineImplTest
     extends TestCase
 {
 
-    SemanticParseEngine testObj;
+    SemanticParseEngineImpl testObj;
 
     public void setUp() throws Exception
     {
         super.setUp();
-        testObj = new SemanticParseEngine();
+        testObj = new SemanticParseEngineImpl( new RomanToArabicNumeralTranslator() );
 
     }
 

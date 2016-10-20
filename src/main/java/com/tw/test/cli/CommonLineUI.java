@@ -2,9 +2,13 @@
  * Copyright (c) 2016 Nokia Solutions and Networks. All rights reserved.
  */
 
-package com.wt.test.cli;
+package com.tw.test.cli;
 
-import com.google.common.base.CharMatcher;
+import com.tw.test.model.ParseResult;
+import com.tw.test.parse.engine.SemanticParseEngine;
+import com.tw.test.parse.engine.SemanticParseEngineImpl;
+import com.tw.test.romannumerals.translator.NumeralTranslator;
+import com.tw.test.romannumerals.translator.RomanToArabicNumeralTranslator;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -24,7 +28,8 @@ public class CommonLineUI
 
     public static void run()
     {
-        SemanticParseEngine semanticParseEngine = new SemanticParseEngine();
+        NumeralTranslator numeralTranslator = new RomanToArabicNumeralTranslator();
+        SemanticParseEngine semanticParseEngine = new SemanticParseEngineImpl( numeralTranslator  );
         do{
             try
             {

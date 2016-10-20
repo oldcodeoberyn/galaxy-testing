@@ -2,7 +2,7 @@
  * Copyright (c) 2016 Nokia Solutions and Networks. All rights reserved.
  */
 
-package com.wt.test.cli;
+package com.tw.test.parse.engine;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -15,26 +15,30 @@ import com.google.common.collect.Collections2;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.wt.test.algorithm.RomanNumeralToArabicNumeralConverter;
-import com.wt.test.data.RomanNumerals;
+import com.tw.test.model.ParseResult;
+import com.tw.test.romannumerals.translator.NumeralTranslator;
+import com.tw.test.romannumerals.validator.RomanNumeralValidator;
 
 /**
  * @author Lex Li
  * @date 19/10/2016
  */
-public class SemanticParseEngine
+public class SemanticParseEngineImpl implements SemanticParseEngine
 {
     public static final String IS_SEPERATOR = " is ";
     public static final String INVALID_ROMAN_SYMBOL = "Z";
-    public HashMap<String, Character> intergalacticToRomanNumeralMap;
-    public HashMap<String, Float> materialValueMap;
+    private final NumeralTranslator numeralTranslator;
+    private final HashMap<String, Character> intergalacticToRomanNumeralMap;
+    private final HashMap<String, Float> materialValueMap;
 
-    public SemanticParseEngine()
+    public SemanticParseEngineImpl( NumeralTranslator numeralTranslator  )
     {
         intergalacticToRomanNumeralMap = Maps.newHashMap();
         materialValueMap = Maps.newHashMap();
+        this.numeralTranslator = numeralTranslator;
     }
 
+    @Override
     public ParseResult parse( String input )
     {
         String strToBeParsed = adjustFormat( input );
@@ -81,7 +85,7 @@ public class SemanticParseEngine
         formulaInfoArr[formulaInfoArr.length - 1] = "";
         String formula = Joiner.on( " " ).join( formulaInfoArr ).trim();
         String romanNumeral = formulaToRomanNumerals( formula );
-        Integer numberOfMaterial = RomanNumeralToArabicNumeralConverter.convert( romanNumeral );
+        Integer numberOfMaterial = numeralTranslator.translate( romanNumeral );
         if( numberOfMaterial == null )
         {
             return ParseResult.failure();
@@ -108,7 +112,7 @@ public class SemanticParseEngine
         materialInfoArr[materialInfoArr.length - 1] = "";
         String formula = Joiner.on( " " ).join( materialInfoArr ).trim();
         String romanNumeral = formulaToRomanNumerals( formula );
-        Integer numberOfMaterial = RomanNumeralToArabicNumeralConverter.convert( romanNumeral );
+        Integer numberOfMaterial = numeralTranslator.translate( romanNumeral );
         if( numberOfMaterial == null )
         {
             return ParseResult.failure();
@@ -116,7 +120,7 @@ public class SemanticParseEngine
 
         String[] creditsInfoArr = creditsInfo.split( " " );
         if( creditsInfoArr.length != 2 || !CharMatcher.DIGIT.matchesAllOf( creditsInfoArr[0] ) ||
-                        !creditsInfoArr[1].toLowerCase().equals( "credits" ) )
+            !creditsInfoArr[1].toLowerCase().equals( "credits" ) )
         {
             return ParseResult.failure();
         }
@@ -150,7 +154,7 @@ public class SemanticParseEngine
 
         String romanNumeral = formulaToRomanNumerals( formula );
 
-        Integer value = RomanNumeralToArabicNumeralConverter.convert( romanNumeral );
+        Integer value = numeralTranslator.translate( romanNumeral );
 
         if( value == null )
         {
@@ -192,7 +196,8 @@ public class SemanticParseEngine
         }
 
         String mappedRomanNumeral = remapInput[1].trim();
-        if( mappedRomanNumeral.length() != 1 || !RomanNumerals.checkInvalidRomanNumeralChar( mappedRomanNumeral ) )
+        if( mappedRomanNumeral.length() != 1 ||
+            !RomanNumeralValidator.checkInvalidRomanNumeralChar( mappedRomanNumeral ) )
         {
             return ParseResult.failure();
         }

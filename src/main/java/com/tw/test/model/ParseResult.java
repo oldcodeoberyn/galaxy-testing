@@ -2,7 +2,7 @@
  * Copyright (c) 2016 Nokia Solutions and Networks. All rights reserved.
  */
 
-package com.wt.test.cli;
+package com.tw.test.model;
 
 /**
  * @author Lex Li
